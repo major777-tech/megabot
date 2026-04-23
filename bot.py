@@ -72,7 +72,7 @@ def down(m):
 # ---------------- DOWNLOAD ----------------
 @bot.message_handler(func=lambda m: m.text and "http" in m.text)
 def download(m):
-    url = m.text.strip()
+    url = m.text.strip().split("?")[0]
     chat = m.chat.id
 
     wait = bot.send_message(chat, "⏳ Yuklanmoqda...")

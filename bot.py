@@ -1,7 +1,7 @@
 # ==========================================
-# MAJORBOT PRO (Telebot)
+# MAJORBOT PRO CLEAN FINAL
 # TikTok / Instagram / YouTube Downloader
-# Render / Railway / VPS Ready
+# Render Ready
 # ==========================================
 
 import os
@@ -11,6 +11,7 @@ from telebot.types import ReplyKeyboardMarkup
 from flask import Flask
 from threading import Thread
 
+# TOKEN
 TOKEN = os.getenv("TOKEN")
 
 bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
@@ -21,96 +22,86 @@ app = Flask(__name__)
 def home():
     return "MAJORBOT PRO LIVE 🚀"
 
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
 # ================= MENU =================
 def menu():
     kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.row("📥 Downloader", "🎵 MP3")
-    kb.row("ℹ️ Yordam")
+    kb.row("📥 Downloader", "ℹ️ Help")
     return kb
 
 # ================= START =================
 @bot.message_handler(commands=['start'])
-def start(m):
+def start(msg):
     bot.send_message(
-        m.chat.id,
+        msg.chat.id,
         "🔥 <b>MAJORBOT PRO</b>\n\n"
-        "📥 TikTok / Instagram / YouTube link yuboring.\n"
-        "⚡ Fast & Premium Downloader",
+        "📥 TikTok / Instagram / YouTube link yuboring.",
         reply_markup=menu()
     )
 
-# ================= BUTTONS =================
-@bot.message_handler(func=lambda m: m.text == "ℹ️ Yordam")
-def help_btn(m):
+# ================= HELP =================
+@bot.message_handler(func=lambda m: m.text == "ℹ️ Help")
+def help_cmd(m):
     bot.send_message(
         m.chat.id,
-        "📌 Bot ishlatish:\n"
-        "1. TikTok link yuboring\n"
-        "2. Instagram reel yuboring\n"
-        "3. YouTube link yuboring\n"
-        "4. Video yoki MP3 olasiz"
+        "📌 Link yuboring:\n"
+        "• TikTok\n"
+        "• Instagram\n"
+        "• YouTube"
     )
 
 @bot.message_handler(func=lambda m: m.text == "📥 Downloader")
 def down_btn(m):
     bot.send_message(m.chat.id, "📥 Link yuboring.")
 
-@bot.message_handler(func=lambda m: m.text == "🎵 MP3")
-def mp3_btn(m):
-    bot.send_message(m.chat.id, "🎵 YouTube link yuboring, MP3 beraman.")
-
-# ================= LINK HANDLER =================
+# ================= DOWNLOAD =================
 @bot.message_handler(func=lambda m: m.text and "http" in m.text)
 def download(m):
-    chat = m.chat.id
-    url = m.text.strip().split("?")[0]
+    chat_id = m.chat.id
+    url = m.text.strip()
 
-    wait = bot.send_message(chat, "⏳ Yuklanmoqda...")
+    wait = bot.send_message(chat_id, "⏳ Yuklanmoqda...")
+
+    filename = f"{chat_id}.mp4"
 
     try:
-        # ===== MP3 if youtube + user selected =====
-        if "youtube.com" in url or "youtu.be" in url:
-            # Video first
-            pass
-
-        video = f"{chat}.mp4"
-
-        opts = {
+        ydl_opts = {
             "format": "best[ext=mp4]/best",
-            "outtmpl": video,
+            "outtmpl": filename,
             "quiet": True,
-            "noplaylist": True,
-            "socket_timeout": 60
+            "noplaylist": True
         }
 
-        with yt_dlp.YoutubeDL(opts) as ydl:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-        with open(video, "rb") as f:
-            bot.send_video(chat, f, caption="🎬 Video tayyor")
+        with open(filename, "rb") as video:
+            bot.send_video(chat_id, video, caption="✅ Tayyor")
 
-        if os.path.exists(video):
-            os.remove(video)
-
-        bot.delete_message(chat, wait.message_id)
+        os.remove(filename)
+        bot.delete_message(chat_id, wait.message_id)
 
     except Exception as e:
         bot.edit_message_text(
             "❌ Yuklab bo‘lmadi.\nBoshqa link yuboring.",
-            chat,
+            chat_id,
             wait.message_id
         )
 
 # ================= OTHER =================
 @bot.message_handler(func=lambda m: True)
 def other(m):
-    bot.send_message(m.chat.id, "👇 Menyudan tanlang yoki link yuboring.", reply_markup=menu())
+    bot.send_message(
+        m.chat.id,
+        "👇 Menyudan tanlang yoki link yuboring.",
+        reply_markup=menu()
+    )
 
 # ================= RUN =================
-def run_web():
-    app.run(host="0.0.0.0", port=10000)
-
 Thread(target=run_web).start()
 
-print("MAJORBOT PRO ishga tushdi...")
-bot.infinity_polling(timeout=60, long_polling_timeout=60)
+print("MAJORBOT PRO STARTED 🚀")
+bot.infinity_polling(skip_pending=True)

@@ -1,79 +1,40 @@
-# ==========================================
-# MAJOR BOT ULTIMATE (FINAL)
-# Render / Railway / VPS
-# ==========================================
+# ===============================
+# MEGABOT CLEAN FINAL VERSION
+# TikTok / Instagram / YouTube Downloader
+# ===============================
 
 import os
 import telebot
 import yt_dlp
-from telebot.types import ReplyKeyboardMarkup
 from flask import Flask
 from threading import Thread
 
 TOKEN = os.getenv("TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 
 bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
 app = Flask(__name__)
 
-users = set()
-
-# ---------------- WEB ----------------
-@app.route("/")
+# -------- WEB --------
+@app.route('/')
 def home():
-    return "Major Bot Ultimate Live 🚀"
+    return "Bot is alive!"
 
-# ---------------- MENU ----------------
-def menu():
-    kb = ReplyKeyboardMarkup(resize_keyboard=True)
-    kb.row("📥 Downloader", "🤖 AI")
-    kb.row("🎬 Kino", "🎵 Musiqa")
-    kb.row("📊 Statistika", "⚙️ Admin")
-    return kb
+def run_web():
+    app.run(host="0.0.0.0", port=10000)
 
-# ---------------- START ----------------
+# -------- START --------
 @bot.message_handler(commands=['start'])
-def start(msg):
-    users.add(msg.chat.id)
+def start(m):
     bot.send_message(
-        msg.chat.id,
-        "🔥 <b>MAJOR BOT ULTIMATE</b>\n\nXush kelibsiz!",
-        reply_markup=menu()
+        m.chat.id,
+        "🔥 MegaBot Ishlayapti!\n\n📥 TikTok / Instagram / YouTube link yuboring."
     )
 
-# ---------------- BUTTONS ----------------
-@bot.message_handler(func=lambda m: m.text == "📊 Statistika")
-def stat(m):
-    bot.send_message(m.chat.id, f"👥 Foydalanuvchilar: {len(users)}")
-
-@bot.message_handler(func=lambda m: m.text == "⚙️ Admin")
-def admin(m):
-    if m.chat.id == ADMIN_ID:
-        bot.send_message(m.chat.id, "👑 Admin panel tayyor")
-    else:
-        bot.send_message(m.chat.id, "⛔ Siz admin emassiz")
-
-@bot.message_handler(func=lambda m: m.text == "🤖 AI")
-def ai(m):
-    bot.send_message(m.chat.id, "🤖 Savolingizni yozing.")
-
-@bot.message_handler(func=lambda m: m.text == "🎬 Kino")
-def kino(m):
-    bot.send_message(m.chat.id, "🎬 Kino nomini yozing.")
-
-@bot.message_handler(func=lambda m: m.text == "🎵 Musiqa")
-def music(m):
-    bot.send_message(m.chat.id, "🎵 Qo‘shiq nomini yozing.")
-
-@bot.message_handler(func=lambda m: m.text == "📥 Downloader")
-def down(m):
-    bot.send_message(m.chat.id, "📥 TikTok / Instagram / YouTube ssilka yuboring.")
-
-# ---------------- DOWNLOAD ----------------
+# -------- ONLY ONE HANDLER --------
 @bot.message_handler(func=lambda m: m.text and "http" in m.text)
 def download(m):
-    url = m.text.strip().split("?")[0]
     chat = m.chat.id
+    url = m.text.strip().split("?")[0]
 
     wait = bot.send_message(chat, "⏳ Yuklanmoqda...")
 
@@ -86,64 +47,44 @@ def download(m):
             "format": "best[ext=mp4]/best",
             "outtmpl": video,
             "quiet": True,
-            "noplaylist": True,
-            "socket_timeout": 60
+            "noplaylist": True
         }
 
         with yt_dlp.YoutubeDL(opts) as ydl:
             ydl.download([url])
 
-        with open(video, "rb") as f:
-            bot.send_video(chat, f, caption="🎬 Video tayyor")
+        if os.path.exists(video):
+            with open(video, "rb") as f:
+                bot.send_video(chat, f, caption="🎬 Video tayyor")
+            os.remove(video)
 
         # AUDIO
         opts2 = {
             "format": "bestaudio/best",
             "outtmpl": audio,
             "quiet": True,
+            "noplaylist": True,
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
-                "preferredquality": "192"
+                "preferredquality": "192",
             }]
         }
 
         with yt_dlp.YoutubeDL(opts2) as ydl:
             ydl.download([url])
 
-        with open(audio, "rb") as a:
-            bot.send_audio(chat, a, caption="🎵 Audio tayyor")
-
-        if os.path.exists(video):
-            os.remove(video)
-
         if os.path.exists(audio):
+            with open(audio, "rb") as f:
+                bot.send_audio(chat, f, caption="🎵 Audio tayyor")
             os.remove(audio)
 
         bot.delete_message(chat, wait.message_id)
 
     except Exception as e:
-        bot.edit_message_text(
-            f"❌ Yuklab bo‘lmadi\n<code>{e}</code>",
-            chat,
-            wait.message_id
-        )
+        bot.send_message(chat, "❌ Yuklab bo‘lmadi")
 
-# ---------------- OTHER ----------------
-@bot.message_handler(func=lambda m: True)
-def other(m):
-    txt = m.text.lower()
-
-    if "salom" in txt:
-        bot.send_message(m.chat.id, "Va alaykum assalom 😊")
-    else:
-        bot.send_message(m.chat.id, "📩 Menyudan tanlang yoki ssilka yuboring.")
-
-# ---------------- RUN ----------------
-def run_web():
-    app.run(host="0.0.0.0", port=10000)
-
+# -------- RUN --------
 Thread(target=run_web).start()
-
-print("🔥 Major Bot Ultimate ishga tushdi...")
-bot.infinity_polling(timeout=60, long_polling_timeout=60)
+print("Bot ishga tushdi")
+bot.infinity_polling()
